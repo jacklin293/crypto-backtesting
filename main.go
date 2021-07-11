@@ -24,12 +24,15 @@ func main() {
 	pair := flag.String("pair", "", "Moving Average param e.g. BTCUSDT")
 	interval := flag.String("interval", "", "Moving Average param e.g. 1m, 1h 4h")
 	length := flag.Int("length", 0, "Moving Average param e.g. 18")
+	dateStart := flag.String("start", "", "e.g. 2020-10-01")
+	dateEnd := flag.String("end", "", "e.g. 2021-06-30")
 	flag.Parse()
 
 	switch *task {
 	// Run backtesting
 	case "1":
-		if err = handleBacktesting(db); err != nil {
+		// TODO put all params into struct
+		if err = handleBacktesting(db, *interval, *length, *dateStart, *dateEnd); err != nil {
 			log.Fatal(err)
 		}
 	// Backfill EMA data

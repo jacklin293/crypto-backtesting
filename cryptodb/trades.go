@@ -10,6 +10,8 @@ type Trade struct {
 	Id     int64
 	TestId int64
 
+	Status int64 // TODO Index
+
 	BidPrice  decimal.Decimal
 	BidVolume decimal.Decimal
 	BidFee    decimal.Decimal
@@ -20,9 +22,10 @@ type Trade struct {
 	AskFee    decimal.Decimal
 	SoldAt    time.Time
 
-	Cost   decimal.Decimal
-	Total  decimal.Decimal // TODO could be negative
-	Return decimal.Decimal // TODO percent, could be negative
+	Cost    decimal.Decimal
+	Revenue decimal.Decimal // TODO could be negative
+	Profit  decimal.Decimal // TODO could be negative
+	Return  decimal.Decimal // TODO percent, could be negative
 
 	Details string // JSON string to store trigger condition, etc.
 

@@ -11,12 +11,15 @@ type Test struct {
 	StrategyId  int64
 	PeriodStart time.Time
 	PeriodEnd   time.Time
-	Fee         decimal.Decimal // percent
-	SeedMoney   decimal.Decimal
-	Revenue     decimal.Decimal // TODO could be negative
-	Return      decimal.Decimal // TODO percent, could be negative
-	WinRate     decimal.Decimal // percent, could be negative
-	Comment     string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+
+	Cost    decimal.Decimal
+	Revenue decimal.Decimal // TODO could be negative
+	Fee     decimal.Decimal
+	Profit  decimal.Decimal // TODO cound be negative, revenue - cost - fee
+	Return  decimal.Decimal // TODO count be negative, percentage, profit / cost
+
+	TradeCount int64 // count of trades
+	Comment    string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }

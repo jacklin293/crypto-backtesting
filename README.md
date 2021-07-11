@@ -6,11 +6,11 @@ Backtesting tool for cryptocurrency market
 Run backtesting
 
 ```
-./crypto-backtesting -task=1
+go build && ./crypto-backtesting -task=1 -interval=1d -start=2020-10-01 -end=2021-06-30 -length=100
 ```
 
 Backfill MA data
 
 ```
-./crypto-backtesting -task=2 -pair=btcusdt -interval=4h -length=18
+go build && ./crypto-backtesting -task=2 -pair=btcusdt -interval=4h -length=18
 ```

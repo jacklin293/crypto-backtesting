@@ -11,24 +11,25 @@ import (
 )
 
 type MovingAverage struct {
-	Type         string
-	PairInterval string
-	Length       int
-	Value        decimal.Decimal
-	OpenTime     time.Time
+	MaKey    string // ma type+pair+interval
+	Length   int
+	Value    decimal.Decimal
+	OpenTime time.Time
 }
 
-func getPairInterval(pair string, interval string) string {
-	return fmt.Sprintf("%s_%s", strings.ToLower(pair), interval)
+func getMaKey(maType string, pair string, interval string) string {
+	return fmt.Sprintf("%s_%s_%s", maType, strings.ToLower(pair), interval)
 }
 
-func NewMovingAverage(maType string, pair string, interval string, length int, value decimal.Decimal, openTime time.Time) MovingAverage {
+func NewMovingAverage(data map[string]interface{}) MovingAverage {
+	maType := data["ma_type"].(string)
+	pair := data["pair"].(string)
+	interval := data["interval"].(string)
 	return MovingAverage{
-		Type:         maType,
-		PairInterval: getPairInterval(pair, interval),
-		Length:       length,
-		Value:        value,
-		OpenTime:     openTime,
+		MaKey:    getMaKey(maType, pair, interval),
+		Length:   data["length"].(int),
+		Value:    data["value"].(decimal.Decimal),
+		OpenTime: data["open_time"].(time.Time),
 	}
 }
 
@@ -37,14 +38,18 @@ func (db *DB) BatchInsertMovingAverages(mas []MovingAverage) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-// TODO
-func (db *DB) GetMovingAverages(maType string, pair string, interval string, length int, openTime time.Time) ([]MovingAverage, error) {
-	return []MovingAverage{}, nil
-}
-
 func (db *DB) GetLastestMovingAverage(maType string, pair string, interval string, length int) (*MovingAverage, int64, error) {
 	var ma MovingAverage
-	result := db.GormDB.Where("type = ? AND pair_interval = ? AND length = ?", maType, getPairInterval(pair, interval), length).Order("open_time DESC").First(&ma)
+	result := db.GormDB.Where("ma_key = ? AND length = ?", getMaKey(maType, pair, interval), length).Order("open_time DESC").First(&ma)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return &MovingAverage{}, 0, result.Error
+	}
+	return &ma, result.RowsAffected, nil
+}
+
+func (db *DB) GetMovingAveragesByOpenTime(maType string, pair string, interval string, length int, openTime time.Time) (*MovingAverage, int64, error) {
+	var ma MovingAverage
+	result := db.GormDB.Where("ma_key = ? AND length = ? AND open_time = ?", getMaKey(maType, pair, interval), length, openTime).Find(&ma)
 	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return &MovingAverage{}, 0, result.Error
 	}
