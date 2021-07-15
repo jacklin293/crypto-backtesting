@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto-backtesting/backfill"
 	"crypto-backtesting/cryptodb"
 	"flag"
 	"fmt"
@@ -20,12 +21,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// backtest
 	task := flag.String("task", "", "e.g. 0: Run backtesting  1: Backfill EMA data")
 	pair := flag.String("pair", "", "Moving Average param e.g. BTCUSDT")
-	interval := flag.String("interval", "", "Moving Average param e.g. 1m, 1h 4h")
-	length := flag.Int("length", 0, "Moving Average param e.g. 18")
 	dateStart := flag.String("start", "", "e.g. 2020-10-01")
 	dateEnd := flag.String("end", "", "e.g. 2021-06-30")
+
+	// backfill
+	maType := flag.String("matype", "", "e.g. ema sma")
+	interval := flag.String("interval", "", "Moving Average param e.g. 1m 1h 4h")
+	length := flag.Int("length", 0, "Moving Average param e.g. 18")
 	flag.Parse()
 
 	switch *task {
@@ -37,8 +42,21 @@ func main() {
 		}
 	// Backfill EMA data
 	case "2":
-		if err = handleBackfillEma(db, "ema", *pair, *interval, *length); err != nil {
-			log.Fatal(err)
+		switch *maType {
+		case "ema":
+			ma := backfill.MA{
+				Db:       db,
+				MaType:   "ema",
+				Pair:     *pair,
+				Interval: *interval,
+				Length:   *length,
+			}
+			if err = ma.HandleBackfillEma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
+				log.Fatal(err)
+			}
+		case "sma":
+		default:
+			log.Fatalf("matype '%s' not supported", *maType)
 		}
 	default:
 		fmt.Println("Please choose a task. Print usage with '-h'")
