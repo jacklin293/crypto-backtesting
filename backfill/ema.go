@@ -2,7 +2,7 @@ package backfill
 
 import (
 	"crypto-backtesting/cryptodb"
-	"flag"
+	"crypto-backtesting/utils"
 	"fmt"
 	"time"
 
@@ -10,14 +10,13 @@ import (
 )
 
 func (ma *MA) HandleBackfillEma(batchLimit int) (err error) {
-	if ma.MaType == "" || ma.Pair == "" || ma.Interval == "" || ma.Length == 0 {
-		flag.PrintDefaults()
-		return fmt.Errorf("All of pair, interval and length need to be specified")
-	}
-
 	// Today and yesterday's multiplier
 	tdyMul := decimal.NewFromInt(int64(2)).Div(decimal.NewFromInt(int64(ma.Length + 1)))
 	ytdMul := decimal.NewFromInt(1).Sub(tdyMul)
+	lengthMins, err := utils.ConvertIntervalToMins(ma.Interval)
+	if err != nil {
+		return
+	}
 
 	for err == nil {
 		latestEma, maCount, err := ma.Db.GetLastestMovingAverage(ma.MaType, ma.Pair, ma.Interval, ma.Length)
@@ -29,14 +28,11 @@ func (ma *MA) HandleBackfillEma(batchLimit int) (err error) {
 		var ema decimal.Decimal
 		var klineCount int64
 
-		// If there is no ma, backfill all
+		// If there is no ma before, start from beginning
 		if maCount == 0 {
-			// FIXME bug get all klines
 			klines, klineCount, err = ma.Db.GetKlines(ma.Pair, ma.Interval, batchLimit, "ASC")
 		} else {
-			// Start from next time
-			startTime := latestEma.OpenTime.Add(time.Hour * time.Duration(4))
-			// FIXME bug get all klines
+			startTime := latestEma.OpenTime.Add(time.Minute * time.Duration(lengthMins))
 			klines, klineCount, err = ma.Db.GetKlinesByOpenTime(ma.Pair, ma.Interval, batchLimit, startTime, "ASC")
 		}
 		if err != nil {
@@ -60,7 +56,7 @@ func (ma *MA) HandleBackfillEma(batchLimit int) (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%d rows have been inserted into moving_averages successfully\n", maCount)
+		fmt.Printf("%d rows have been inserted into table 'moving_averages' successfully\n", maCount)
 	}
 
 	return

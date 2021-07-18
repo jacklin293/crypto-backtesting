@@ -2,6 +2,7 @@ package strategies
 
 import (
 	"crypto-backtesting/cryptodb"
+	"crypto-backtesting/utils"
 	"fmt"
 	"time"
 
@@ -51,7 +52,7 @@ func HandleEmaLastKline(db *cryptodb.DB, interval string, length int, dateStart 
 		periodEnd:   periodEnd,
 	}
 
-	lengthMins, err := convertIntervalToMinutes(elk.interval)
+	lengthMins, err := utils.ConvertIntervalToMins(elk.interval)
 	if err != nil {
 		return
 	}
@@ -191,25 +192,5 @@ func (elk *emaLastKline) getTimeBlockByLength(t time.Time, lengthMins int) (tSta
 	timeBlocks := mins / lengthMins
 	tStart = time.Date(t.Year(), t.Month(), t.Day(), 0, timeBlocks*lengthMins, 0, 0, time.UTC)
 	tEnd = time.Date(t.Year(), t.Month(), t.Day(), 0, (timeBlocks+1)*lengthMins, 0, 0, time.UTC)
-	return
-}
-
-func convertIntervalToMinutes(interval string) (mins int, err error) {
-	switch interval {
-	case "15m":
-		mins = 15
-	case "30m":
-		mins = 30
-	case "1h":
-		mins = 60
-	case "2h":
-		mins = 120
-	case "4h":
-		mins = 240
-	case "1d":
-		mins = 1440
-	default:
-		err = fmt.Errorf("interval '%s' not supported", interval)
-	}
 	return
 }

@@ -42,7 +42,7 @@ func (db *DB) GetLastestMovingAverage(maType string, pair string, interval strin
 	var ma MovingAverage
 	result := db.GormDB.Where("ma_key = ? AND length = ?", getMaKey(maType, pair, interval), length).Order("open_time DESC").First(&ma)
 	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return &MovingAverage{}, 0, result.Error
+		return &ma, 0, result.Error
 	}
 	return &ma, result.RowsAffected, nil
 }
@@ -51,7 +51,7 @@ func (db *DB) GetMovingAveragesByOpenTime(maType string, pair string, interval s
 	var ma MovingAverage
 	result := db.GormDB.Where("ma_key = ? AND length = ? AND open_time = ?", getMaKey(maType, pair, interval), length, openTime).Find(&ma)
 	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return &MovingAverage{}, 0, result.Error
+		return &ma, 0, result.Error
 	}
 	return &ma, result.RowsAffected, nil
 }

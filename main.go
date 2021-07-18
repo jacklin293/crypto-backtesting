@@ -33,6 +33,10 @@ func main() {
 	length := flag.Int("length", 0, "Moving Average param e.g. 18")
 	flag.Parse()
 
+	if *length > DB_KLINES_BATCH_SELECT_NUMBER {
+		log.Fatalf("DB_KLINES_BATCH_SELECT_NUMBER(%d) must be bigger than length(%d)", DB_KLINES_BATCH_SELECT_NUMBER, *length)
+	}
+
 	switch *task {
 	// Run backtesting
 	case "1":
@@ -42,19 +46,27 @@ func main() {
 		}
 	// Backfill EMA data
 	case "2":
+		if *pair == "" || *interval == "" || *length == 0 {
+			flag.PrintDefaults()
+			log.Fatalf("All pair, interval and length should be specified")
+		}
+		ma := backfill.MA{
+			Db:       db,
+			Pair:     *pair,
+			Interval: *interval,
+			Length:   *length,
+		}
 		switch *maType {
 		case "ema":
-			ma := backfill.MA{
-				Db:       db,
-				MaType:   "ema",
-				Pair:     *pair,
-				Interval: *interval,
-				Length:   *length,
-			}
+			ma.MaType = "ema"
 			if err = ma.HandleBackfillEma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
 				log.Fatal(err)
 			}
 		case "sma":
+			ma.MaType = "sma"
+			if err = ma.HandleBackfillSma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
+				log.Fatal(err)
+			}
 		default:
 			log.Fatalf("matype '%s' not supported", *maType)
 		}
