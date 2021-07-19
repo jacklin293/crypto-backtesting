@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto-backtesting/backfill"
+	"crypto-backtesting/backtest"
 	"crypto-backtesting/cryptodb"
 	"flag"
 	"fmt"
@@ -24,8 +25,6 @@ func main() {
 	// backtest
 	task := flag.String("task", "", "e.g. 0: Run backtesting  1: Backfill EMA data")
 	pair := flag.String("pair", "", "Moving Average param e.g. BTCUSDT")
-	dateStart := flag.String("start", "", "e.g. 2020-10-01")
-	dateEnd := flag.String("end", "", "e.g. 2021-06-30")
 
 	// backfill
 	maType := flag.String("matype", "", "e.g. ema sma")
@@ -41,7 +40,10 @@ func main() {
 	// Run backtesting
 	case "1":
 		// TODO put all params into struct
-		if err = handleBacktesting(db, *interval, *length, *dateStart, *dateEnd); err != nil {
+		p := backtest.Params{
+			Db: db,
+		}
+		if err = p.HandleBacktesting(db); err != nil {
 			log.Fatal(err)
 		}
 	// Backfill EMA data
@@ -50,7 +52,7 @@ func main() {
 			flag.PrintDefaults()
 			log.Fatalf("All pair, interval and length should be specified")
 		}
-		ma := backfill.MA{
+		p := backfill.Params{
 			Db:       db,
 			Pair:     *pair,
 			Interval: *interval,
@@ -58,13 +60,13 @@ func main() {
 		}
 		switch *maType {
 		case "ema":
-			ma.MaType = "ema"
-			if err = ma.HandleBackfillEma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
+			p.MaType = "ema"
+			if err = p.HandleBackfillEma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
 				log.Fatal(err)
 			}
 		case "sma":
-			ma.MaType = "sma"
-			if err = ma.HandleBackfillSma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
+			p.MaType = "sma"
+			if err = p.HandleBackfillSma(DB_KLINES_BATCH_SELECT_NUMBER); err != nil {
 				log.Fatal(err)
 			}
 		default:

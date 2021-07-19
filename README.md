@@ -3,12 +3,6 @@ Backtesting tool for cryptocurrency market
 
 # How to use
 
-Run backtesting
-
-```
-go build && ./crypto-backtesting -task=1 -interval=1d -start=2020-10-01 -end=2021-06-30 -length=100
-```
-
 Backfill EMA data
 
 ```
@@ -19,4 +13,14 @@ Backfill SMA data
 
 ```
 go build && ./crypto-backtesting -task=2 -pair=btcusdt -matype=sma -interval=4h -length=18
+```
+
+Create a new strategy in the table `strategies`, e.g.
+
+// TODO
+
+Run backtesting
+
+```
+go build && ./crypto-backtesting -task=1
 ```

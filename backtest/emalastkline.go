@@ -1,4 +1,4 @@
-package strategies
+package backtest
 
 import (
 	"crypto-backtesting/cryptodb"
@@ -31,7 +31,15 @@ type emaLastKline struct {
 	periodEnd   time.Time
 }
 
-func HandleEmaLastKline(db *cryptodb.DB, interval string, length int, dateStart string, dateEnd string) (err error) {
+func (p *Params) handleEmaLastKline(db *cryptodb.DB) (err error) {
+	// FIXME
+	maType := "ema"
+	pair := "btcusdt"
+	interval := "4h"
+	length := 18
+	dateStart := "2020-10-01"
+	dateEnd := "2021-06-30"
+
 	periodStart, err := time.Parse("2006-01-02 15:04:05", dateStart+" 00:00:00")
 	if err != nil {
 		return
@@ -44,8 +52,8 @@ func HandleEmaLastKline(db *cryptodb.DB, interval string, length int, dateStart 
 	// FIXME
 	elk := emaLastKline{
 		db:          db,
-		maType:      "ema",
-		pair:        "btcusdt",
+		maType:      maType,
+		pair:        pair,
 		interval:    interval,
 		length:      length,
 		periodStart: periodStart,

@@ -12,7 +12,7 @@ type Strategy struct {
 	Title        string
 	Description  string         // Description
 	StrategyType string         // strategy type
-	Params       datatypes.JSON // JSON string to store ad-hoc params of strategy type
+	Params       datatypes.JSON // JSON string to store ad-hoc params of strategy type e.g. pair, interval, length
 	Start        time.Time
 	End          time.Time
 	Cost         decimal.Decimal
