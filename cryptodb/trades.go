@@ -7,28 +7,21 @@ import (
 )
 
 type Trade struct {
-	Id     int64
-	TestId int64
-
-	Status int64 // TODO Index
-
+	Id        int64
+	TestId    int64
+	Status    int64 // 0: undone 1: done
 	BidPrice  decimal.Decimal
 	BidVolume decimal.Decimal
 	BidFee    decimal.Decimal
 	BoughtAt  time.Time
-
 	AskPrice  decimal.Decimal
 	AskVolume decimal.Decimal
 	AskFee    decimal.Decimal
 	SoldAt    time.Time
-
-	Cost    decimal.Decimal
-	Revenue decimal.Decimal // TODO could be negative
-	Profit  decimal.Decimal // TODO could be negative
-	Return  decimal.Decimal // TODO percent, could be negative
-
-	Details string // JSON string to store trigger condition, etc.
-
+	Cost      decimal.Decimal
+	Revenue   decimal.Decimal
+	Profit    decimal.Decimal
+	ROI       decimal.Decimal
 	CreatedAt time.Time
 	UpdateAt  time.Time
 }
