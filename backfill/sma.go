@@ -9,14 +9,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func (p *Params) HandleBackfillSma(batchLimit int) (err error) {
-	lengthMins, err := utils.ConvertIntervalToMins(p.Interval)
+type Sma struct {
+	baseMA
+}
+
+func (ma *Sma) backfill() (err error) {
+	lengthMins, err := utils.ConvertIntervalToMins(ma.interval)
 	if err != nil {
 		return
 	}
 
 	for err == nil {
-		latestSma, maCount, err := p.Db.GetLastestMovingAverage(p.MaType, p.Pair, p.Interval, p.Length)
+		latestSma, maCount, err := ma.db.GetLastestMovingAverage(ma.maType, ma.pair, ma.interval, ma.length)
 		if err != nil {
 			return err
 		}
@@ -26,24 +30,24 @@ func (p *Params) HandleBackfillSma(batchLimit int) (err error) {
 
 		// If there is no ma before, start from beginning
 		if maCount == 0 {
-			klines, klineCount, err = p.Db.GetKlines(p.Pair, p.Interval, batchLimit, "ASC")
+			klines, klineCount, err = ma.db.GetKlines(ma.pair, ma.interval, KLINE_BATCH_LIMIT, "ASC")
 		} else {
-			startTime := latestSma.OpenTime.Add(time.Minute * time.Duration(-lengthMins*(p.Length-2)))
-			klines, klineCount, err = p.Db.GetKlinesByOpenTime(p.Pair, p.Interval, batchLimit, startTime, "ASC")
+			startTime := latestSma.OpenTime.Add(time.Minute * time.Duration(-lengthMins*(ma.length-2)))
+			klines, klineCount, err = ma.db.GetKlinesByOpenTime(ma.pair, ma.interval, KLINE_BATCH_LIMIT, startTime, "ASC")
 		}
 		if err != nil {
 			return err
 		}
 		if klineCount == 0 {
-			return fmt.Errorf("There is no more klines of %s-%s to backfill SMA", p.Pair, p.Interval)
+			return fmt.Errorf("There is no more klines of %s-%s to backfill SMA", ma.pair, ma.interval)
 		}
-		if len(*klines) < p.Length {
-			return fmt.Errorf("There is no enough klines of %s-%s to backfill SMA with length %d", p.Pair, p.Interval, p.Length)
+		if len(*klines) < ma.length {
+			return fmt.Errorf("There is no enough klines of %s-%s to backfill SMA with length %d", ma.pair, ma.interval, ma.length)
 		}
 
 		// Start to calculate sma based on existing klines data and return MovingAverage struct
-		smas := p.calculateSma(klines)
-		maCount, err = p.Db.BatchInsertMovingAverages(smas)
+		smas := ma.calculateSma(klines)
+		maCount, err = ma.db.BatchInsertMovingAverages(smas)
 		if err != nil {
 			return err
 		}
@@ -53,25 +57,25 @@ func (p *Params) HandleBackfillSma(batchLimit int) (err error) {
 	return
 }
 
-func (p *Params) calculateSma(klines *[]cryptodb.Kline) (smas []cryptodb.MovingAverage) {
+func (ma *Sma) calculateSma(klines *[]cryptodb.Kline) (smas []cryptodb.MovingAverage) {
 	for i := 0; i < len(*klines); i++ {
 		// Add 'i != 0' into condition to prevent from breaking due to only 3 klines
-		if i != 0 && i > len(*klines)-p.Length {
+		if i != 0 && i > len(*klines)-ma.length {
 			break
 		}
 
-		l := i + p.Length
+		l := i + ma.length
 		var total decimal.Decimal
 		for j := i; j < l; j++ {
 			total = total.Add((*klines)[j].Close)
 		}
 
 		maData := map[string]interface{}{
-			"ma_type":   p.MaType,
-			"pair":      p.Pair,
-			"interval":  p.Interval,
-			"length":    p.Length,
-			"value":     total.Div(decimal.NewFromInt(int64(p.Length))),
+			"ma_type":   ma.maType,
+			"pair":      ma.pair,
+			"interval":  ma.interval,
+			"length":    ma.length,
+			"value":     total.Div(decimal.NewFromInt(int64(ma.length))),
 			"open_time": (*klines)[l-1].OpenTime,
 		}
 		sma := cryptodb.NewMovingAverage(maData)

@@ -6,4 +6,4 @@ CREATE TABLE `moving_averages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Moving Averages';
 
 ALTER TABLE `moving_averages`
-  ADD UNIQUE KEY `ma_key_length_opentime` (`ma_key`,`length`,`open_time`);
+  ADD UNIQUE KEY `makey_length_opentime` (`ma_key`,`length`,`open_time`);

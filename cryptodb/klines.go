@@ -45,7 +45,7 @@ func (db *DB) GetKlinesByOpenTime(pair string, interval string, limit int, openT
 
 func (db *DB) GetKlineByOpenTime(pair string, interval string, openTime time.Time) (*Kline, int64, error) {
 	var kline Kline
-	result := db.GormDB.Where("kline_key = ? AND open_time >= ?", getKlineKey(pair, interval), openTime).Find(&kline)
+	result := db.GormDB.Where("kline_key = ? AND open_time = ?", getKlineKey(pair, interval), openTime).Find(&kline)
 	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return &kline, 0, result.Error
 	}

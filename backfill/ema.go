@@ -9,17 +9,21 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func (p *Params) HandleBackfillEma(batchLimit int) (err error) {
+type Ema struct {
+	baseMA
+}
+
+func (ma *Ema) backfill() (err error) {
 	// Today and yesterday's multiplier
-	tdyMul := decimal.NewFromInt(int64(2)).Div(decimal.NewFromInt(int64(p.Length + 1)))
+	tdyMul := decimal.NewFromInt(int64(2)).Div(decimal.NewFromInt(int64(ma.length + 1)))
 	ytdMul := decimal.NewFromInt(1).Sub(tdyMul)
-	lengthMins, err := utils.ConvertIntervalToMins(p.Interval)
+	lengthMins, err := utils.ConvertIntervalToMins(ma.interval)
 	if err != nil {
 		return
 	}
 
 	for err == nil {
-		latestEma, maCount, err := p.Db.GetLastestMovingAverage(p.MaType, p.Pair, p.Interval, p.Length)
+		latestEma, maCount, err := ma.db.GetLastestMovingAverage(ma.maType, ma.pair, ma.interval, ma.length)
 		if err != nil {
 			return err
 		}
@@ -30,16 +34,16 @@ func (p *Params) HandleBackfillEma(batchLimit int) (err error) {
 
 		// If there is no ma before, start from beginning
 		if maCount == 0 {
-			klines, klineCount, err = p.Db.GetKlines(p.Pair, p.Interval, batchLimit, "ASC")
+			klines, klineCount, err = ma.db.GetKlines(ma.pair, ma.interval, KLINE_BATCH_LIMIT, "ASC")
 		} else {
 			startTime := latestEma.OpenTime.Add(time.Minute * time.Duration(lengthMins))
-			klines, klineCount, err = p.Db.GetKlinesByOpenTime(p.Pair, p.Interval, batchLimit, startTime, "ASC")
+			klines, klineCount, err = ma.db.GetKlinesByOpenTime(ma.pair, ma.interval, KLINE_BATCH_LIMIT, startTime, "ASC")
 		}
 		if err != nil {
 			return err
 		}
 		if klineCount == 0 {
-			return fmt.Errorf("There is no more klines of %s-%s to backfill EMA", p.Pair, p.Interval)
+			return fmt.Errorf("There is no more klines of %s-%s to backfill EMA", ma.pair, ma.interval)
 		}
 
 		if maCount == 0 {
@@ -51,8 +55,8 @@ func (p *Params) HandleBackfillEma(batchLimit int) (err error) {
 		}
 
 		// Start to calculate ema based on existing klines data and return MovingAverage struct
-		emas := p.calculateEma(tdyMul, ytdMul, ema, klines)
-		maCount, err = p.Db.BatchInsertMovingAverages(emas)
+		emas := ma.calculateEma(tdyMul, ytdMul, ema, klines)
+		maCount, err = ma.db.BatchInsertMovingAverages(emas)
 		if err != nil {
 			return err
 		}
@@ -64,7 +68,7 @@ func (p *Params) HandleBackfillEma(batchLimit int) (err error) {
 
 // EMA=Price(t)×k+EMA(y)×(1−k)
 // t=today, y=yesterday, k=2÷(N+1), N=length
-func (p *Params) calculateEma(tdyMul decimal.Decimal, ytdMul decimal.Decimal, lastEma decimal.Decimal, klines *[]cryptodb.Kline) (emas []cryptodb.MovingAverage) {
+func (ma *Ema) calculateEma(tdyMul decimal.Decimal, ytdMul decimal.Decimal, lastEma decimal.Decimal, klines *[]cryptodb.Kline) (emas []cryptodb.MovingAverage) {
 	var maVal decimal.Decimal
 	for i, kline := range *klines {
 		if i == 0 {
@@ -73,10 +77,10 @@ func (p *Params) calculateEma(tdyMul decimal.Decimal, ytdMul decimal.Decimal, la
 			maVal = kline.Close.Mul(tdyMul).Add(emas[i-1].Value.Mul(ytdMul))
 		}
 		maData := map[string]interface{}{
-			"ma_type":   p.MaType,
-			"pair":      p.Pair,
-			"interval":  p.Interval,
-			"length":    p.Length,
+			"ma_type":   ma.maType,
+			"pair":      ma.pair,
+			"interval":  ma.interval,
+			"length":    ma.length,
 			"value":     maVal,
 			"open_time": kline.OpenTime,
 		}
