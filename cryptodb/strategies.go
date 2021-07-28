@@ -12,7 +12,6 @@ import (
 type Strategy struct {
 	Id           int64
 	StrategyType string // strategy type
-	MaType       string
 	Pair         string
 	Interval     string
 	Params       datatypes.JSONMap // JSON string to store ad-hoc params of strategy type e.g. {"ma_type":"ema","pair":"btcusdt","interval":"4h","length":18}

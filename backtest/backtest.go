@@ -101,7 +101,6 @@ func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Ba
 	base := baseStrategy{
 		db:           db,
 		strategyType: strategy.StrategyType,
-		maType:       strategy.MaType,
 		pair:         strategy.Pair,
 		interval:     strategy.Interval,
 		length:       length,
@@ -118,6 +117,11 @@ func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Ba
 
 	switch strategy.StrategyType {
 	case "ma_and_loss_tolerance":
+		maType, ok := strategy.Params["ma_type"].(string)
+		if !ok {
+			err = errors.New("'ma_type' is missing in params or not a string")
+			return
+		}
 		lossTolerance, ok := strategy.Params["loss_tolerance"].(float64)
 		if !ok {
 			err = errors.New("'loss_tolerance' is missing in params or not a float")
@@ -126,12 +130,21 @@ func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Ba
 		s = &maAndLossTolerance{
 			baseStrategy: base,
 			params: maAndLossToleranceParams{
+				maType:        maType,
 				lossTolerance: lossTolerance,
 			},
 		}
 	case "ma_and_latest_kline":
+		maType, ok := strategy.Params["ma_type"].(string)
+		if !ok {
+			err = errors.New("'ma_type' is missing in params or not a string")
+			return
+		}
 		s = &maAndLastKline{
 			baseStrategy: base,
+			params: maAndLastKlineParams{
+				maType: maType,
+			},
 		}
 	default:
 		err = fmt.Errorf("strategy_type '%s' not supported", strategy.StrategyType)

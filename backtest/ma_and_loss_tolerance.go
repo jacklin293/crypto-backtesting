@@ -16,6 +16,7 @@ type maAndLossTolerance struct {
 }
 
 type maAndLossToleranceParams struct {
+	maType        string
 	lossTolerance float64
 }
 
@@ -56,12 +57,12 @@ func (s *maAndLossTolerance) backtest() (err error) {
 		previousOpenTime := blockStart.Add(time.Minute * time.Duration(-lengthMins))
 
 		// Get previous MA by length
-		baselineMA, count, err := s.db.GetMovingAveragesByOpenTime(s.maType, s.pair, s.interval, s.length, previousOpenTime)
+		baselineMA, count, err := s.db.GetMovingAveragesByOpenTime(s.params.maType, s.pair, s.interval, s.length, previousOpenTime)
 		if err != nil {
 			return err
 		}
 		if count == 0 {
-			return fmt.Errorf("baseline-%s(%d) not found at %v", strings.ToUpper(s.maType), s.length, previousOpenTime)
+			return fmt.Errorf("baseline-%s(%d) not found at %v", strings.ToUpper(s.params.maType), s.length, previousOpenTime)
 		}
 
 		if err = s.checkPricesInTimeBlock(minKlineStart, minKlineEnd, baselineMA); err != nil {
@@ -78,7 +79,7 @@ func (s *maAndLossTolerance) backtest() (err error) {
 	if s.test.tradeCount != 0 {
 		roiPerTrade = roi.Div(decimal.NewFromInt(int64(s.test.tradeCount)))
 	}
-	fmt.Printf("'%s %s%d %s %s' $%s => $%s (%s%%) tradeCount: %d (%s%%/t) (%s ~ %s) %s\n", s.pair, s.maType, s.length, s.interval, s.strategyType, s.test.cost.StringFixed(0), s.test.marketValue.StringFixed(0), roi.StringFixed(1), s.test.tradeCount, roiPerTrade.StringFixed(1), s.start.Format("2006-01-02"), s.end.Format("2006-01-02"), time.Since(startTime))
+	fmt.Printf("'%s %s%d %s %s' $%s => $%s (%s%%) tradeCount: %d (%s%%/t) (%s ~ %s) %s\n", s.pair, s.params.maType, s.length, s.interval, s.strategyType, s.test.cost.StringFixed(0), s.test.marketValue.StringFixed(0), roi.StringFixed(1), s.test.tradeCount, roiPerTrade.StringFixed(1), s.start.Format("2006-01-02"), s.end.Format("2006-01-02"), time.Since(startTime))
 
 	return
 }

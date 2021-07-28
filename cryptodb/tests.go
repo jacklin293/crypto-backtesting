@@ -11,7 +11,6 @@ type Test struct {
 	Id               int64
 	StrategyId       int64
 	StrategyType     string
-	StrategyMaType   string
 	StrategyPair     string
 	StrategyInterval string
 	StrategyParams   datatypes.JSON

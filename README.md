@@ -18,10 +18,9 @@ go build && ./crypto-backtesting -task=2 -pair=btcusdt -matype=sma -interval=4h 
 Create a strategy in the table `strategies`, e.g.
 
 * strategy_type: `ma_and_loss_tolerance`
-* ma_type: `ema`
 * pair: `btcusdt`
 * interval: `1d`
-* params: `{"loss_tolerance": 0.03}`
+* params: `{"ma_type":"ema","loss_tolerance":0.03}`
 * start: `2021-06-01`
 * end: `2021-06-30`
 * cost: `1000`
@@ -53,6 +52,7 @@ Params example:
 
 ```
 {
+  "ma_type": "ema",
   "loss_tolerance": 0.03
 }
 ```
@@ -65,5 +65,10 @@ Use the latest MA value and kline as baselines.
 * Buy when the price is above MA value and kline's high.
 * Sell when the price is below MA value and kline's low
 
+```
+{
+  "ma_type": "ema"
+}
+```
 
 
