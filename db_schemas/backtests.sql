@@ -16,31 +16,31 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `trades`
+-- Table structure for table `backtests`
 --
 
-DROP TABLE IF EXISTS `trades`;
+DROP TABLE IF EXISTS `backtests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `trades` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `test_id` int(11) NOT NULL COMMENT 'test id',
-  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0: undone 1: done',
-  `bid_price` decimal(18,8) unsigned NOT NULL COMMENT 'Bid price',
-  `bid_volume` decimal(18,8) unsigned NOT NULL COMMENT 'Bid volume',
-  `bid_fee` decimal(18,8) NOT NULL COMMENT 'Bid fee',
-  `bought at` datetime NOT NULL COMMENT 'Bought time',
-  `ask_price` decimal(18,8) unsigned NOT NULL COMMENT 'Ask price',
-  `ask_volume` decimal(18,8) unsigned NOT NULL COMMENT 'Ask volume',
-  `ask_fee` decimal(18,8) NOT NULL COMMENT 'Ask fee',
-  `sold_at` datetime NOT NULL COMMENT 'Sold time',
+CREATE TABLE `backtests` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `strategy_id` int(10) NOT NULL COMMENT 'Strategy Id',
+  `strategy_type` varchar(30) NOT NULL COMMENT 'Strategy type',
+  `strategy_pair` varchar(15) NOT NULL COMMENT 'Strategy pair',
+  `strategy_interval` varchar(3) NOT NULL COMMENT 'Strategy interval',
+  `strategy_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Strategy params' CHECK (json_valid(`strategy_params`)),
+  `start` date NOT NULL COMMENT 'Period start time',
+  `end` date NOT NULL COMMENT 'Period end time',
   `cost` decimal(18,8) unsigned NOT NULL COMMENT 'Cost',
   `revenue` decimal(18,8) NOT NULL COMMENT 'Revenue',
+  `fee` decimal(18,8) NOT NULL COMMENT 'Total trade fee',
   `profit` decimal(18,8) NOT NULL COMMENT 'Profit',
-  `ROI` decimal(18,8) NOT NULL COMMENT 'Return on investment',
+  `ROI` decimal(18,8) NOT NULL COMMENT 'Return on Investment',
+  `trade_count` int(10) unsigned NOT NULL COMMENT 'Total trade count',
+  `comment` text NOT NULL COMMENT 'Comment',
   `created_at` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Create time',
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Update time',
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
-  KEY `test_id` (`test_id`)
+  KEY `strategy_id` (`strategy_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;

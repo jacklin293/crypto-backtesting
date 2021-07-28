@@ -2,6 +2,7 @@ package backtest
 
 import (
 	"crypto-backtesting/cryptodb"
+	"crypto-backtesting/market/future"
 	"errors"
 	"fmt"
 	"log"
@@ -13,9 +14,6 @@ import (
 
 const (
 	MIN_KLINE_BATCH_LIMIT = 1000 // 1-min kline batch limit
-
-	// FIXME
-	COST = 1000
 )
 
 type Backtester interface {
@@ -76,25 +74,38 @@ func Start(db *cryptodb.DB, strategyId int64) {
 		*strategies = append(*strategies, *strategy)
 	}
 
-	var wg sync.WaitGroup
+	// TODO REFACTOR
 	for _, strategy := range *strategies {
-		for length := 20; length <= 180; length += 20 {
-			wg.Add(1)
-			go func(wg *sync.WaitGroup, strategy cryptodb.Strategy, length int) {
-				defer wg.Done()
+		switch strategy.StrategyType {
+		case "ma_and_loss_tolerance", "ma_and_latest_kline":
+			var wg sync.WaitGroup
+			for length := 20; length <= 200; length += 20 {
+				wg.Add(1)
+				go func(wg *sync.WaitGroup, strategy cryptodb.Strategy, length int) {
+					defer wg.Done()
 
-				s, err := newStrategy(db, &strategy, length)
-				if err != nil {
-					log.Fatalf("Strategy id '%d' failed, err: %v\n", strategy.Id, err)
-				} else {
-					if err = s.backtest(); err != nil {
-						fmt.Printf("Strategy id: %d failed, err: %v\n", strategy.Id, err)
+					s, err := newStrategy(db, &strategy, length)
+					if err != nil {
+						log.Fatalf("Strategy id '%d' failed, err: %v\n", strategy.Id, err)
 					}
-				}
-			}(&wg, strategy, length)
+					if err = s.backtest(); err != nil {
+						log.Fatalf("Strategy id: %d failed, err: %v\n", strategy.Id, err)
+					}
+				}(&wg, strategy, length)
+			}
+			wg.Wait()
+		case "future_contract":
+			s, err := newStrategy(db, &strategy, 0) // no need for length
+			if err != nil {
+				log.Fatalf("Strategy id '%d' failed, err: %v\n", strategy.Id, err)
+			}
+			if err = s.backtest(); err != nil {
+				log.Fatalf("Strategy id: %d failed, err: %v\n", strategy.Id, err)
+			}
+		default:
+			log.Fatalf("id: %d, strategy '%s' not supported", strategy.Id, strategy.StrategyType)
 		}
 	}
-	wg.Wait()
 }
 
 func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Backtester, err error) {
@@ -107,8 +118,8 @@ func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Ba
 		start:        strategy.Start,
 		end:          strategy.End.AddDate(0, 0, 1).Add(-time.Second),
 		test: test{
-			cost:        decimal.NewFromFloat(COST),
-			marketValue: decimal.NewFromFloat(COST),
+			cost:        strategy.Cost,
+			marketValue: strategy.Cost,
 		},
 		trade: trade{
 			status: "waiting",
@@ -119,17 +130,15 @@ func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Ba
 	case "ma_and_loss_tolerance":
 		maType, ok := strategy.Params["ma_type"].(string)
 		if !ok {
-			err = errors.New("'ma_type' is missing in params or not a string")
-			return
+			return s, errors.New("'ma_type' is missing in params or not a string")
 		}
 		lossTolerance, ok := strategy.Params["loss_tolerance"].(float64)
 		if !ok {
-			err = errors.New("'loss_tolerance' is missing in params or not a float")
-			return
+			return s, errors.New("'loss_tolerance' is missing in params or not a float")
 		}
-		s = &maAndLossTolerance{
+		s = &strategyMaAndLossTolerance{
 			baseStrategy: base,
-			params: maAndLossToleranceParams{
+			params: strategyMaAndLossToleranceParams{
 				maType:        maType,
 				lossTolerance: lossTolerance,
 			},
@@ -137,13 +146,24 @@ func newStrategy(db *cryptodb.DB, strategy *cryptodb.Strategy, length int) (s Ba
 	case "ma_and_latest_kline":
 		maType, ok := strategy.Params["ma_type"].(string)
 		if !ok {
-			err = errors.New("'ma_type' is missing in params or not a string")
-			return
+			return s, errors.New("'ma_type' is missing in params or not a string")
 		}
-		s = &maAndLastKline{
+		s = &strategyMaAndLastKline{
 			baseStrategy: base,
-			params: maAndLastKlineParams{
+			params: strategyMaAndLastKlineParams{
 				maType: maType,
+			},
+		}
+	case "future_contract":
+		c, err := future.NewContract(strategy.Params)
+		if err != nil {
+			return s, err
+		}
+
+		s = &strategyFutureContract{
+			baseStrategy: base,
+			params: strategyFutureContractParams{
+				contract: c,
 			},
 		}
 	default:

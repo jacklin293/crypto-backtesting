@@ -10,17 +10,17 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type maAndLossTolerance struct {
+type strategyMaAndLossTolerance struct {
 	baseStrategy
-	params maAndLossToleranceParams
+	params strategyMaAndLossToleranceParams
 }
 
-type maAndLossToleranceParams struct {
+type strategyMaAndLossToleranceParams struct {
 	maType        string
 	lossTolerance float64
 }
 
-func (s *maAndLossTolerance) backtest() (err error) {
+func (s *strategyMaAndLossTolerance) backtest() (err error) {
 	startTime := time.Now()
 
 	lengthMins, err := utils.ConvertIntervalToMins(s.interval)
@@ -84,7 +84,7 @@ func (s *maAndLossTolerance) backtest() (err error) {
 	return
 }
 
-func (s *maAndLossTolerance) checkPricesInTimeBlock(tStart time.Time, tEnd time.Time, baselineMA *cryptodb.MovingAverage) (err error) {
+func (s *strategyMaAndLossTolerance) checkPricesInTimeBlock(tStart time.Time, tEnd time.Time, baselineMA *cryptodb.MovingAverage) (err error) {
 	var klineCount int64
 	var minKlines *[]cryptodb.Kline
 	nextStart := tStart
@@ -110,7 +110,7 @@ func (s *maAndLossTolerance) checkPricesInTimeBlock(tStart time.Time, tEnd time.
 	return
 }
 
-func (s *maAndLossTolerance) checkPricesWithMinKlines(klines *[]cryptodb.Kline, baselineMA *cryptodb.MovingAverage) error {
+func (s *strategyMaAndLossTolerance) checkPricesWithMinKlines(klines *[]cryptodb.Kline, baselineMA *cryptodb.MovingAverage) error {
 	sellPercent := decimal.NewFromFloat(float64(1) - s.params.lossTolerance)
 	for _, kline := range *klines {
 		switch s.trade.status {
@@ -120,7 +120,7 @@ func (s *maAndLossTolerance) checkPricesWithMinKlines(klines *[]cryptodb.Kline, 
 				 0 if d == d2
 				+1 if d >  d2
 			*/
-			if kline.Close.Cmp(baselineMA.Value) >= 0 {
+			if kline.Close.GreaterThanOrEqual(baselineMA.Value) {
 				// Buy
 				s.trade.cost = s.test.marketValue
 				s.trade.status = "long"
@@ -130,7 +130,7 @@ func (s *maAndLossTolerance) checkPricesWithMinKlines(klines *[]cryptodb.Kline, 
 				// fmt.Printf("%s [B] %s at %s\n", kline.OpenTime.Format("2006-01-02 15:04"), s.trade.cost.StringFixed(2), s.trade.bidPrice.StringFixed(2))
 			}
 		case "long":
-			if kline.Close.Cmp(baselineMA.Value.Mul(sellPercent)) <= 0 {
+			if kline.Close.LessThanOrEqual(baselineMA.Value.Mul(sellPercent)) {
 				// Sell
 				s.trade.status = "short"
 				s.trade.revenue = kline.Close.Mul(s.trade.bidVolume)

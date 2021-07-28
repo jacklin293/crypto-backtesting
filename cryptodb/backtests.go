@@ -7,7 +7,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-type Test struct {
+type Backtest struct {
 	Id               int64
 	StrategyId       int64
 	StrategyType     string

@@ -43,7 +43,7 @@ func (ma *Ema) backfill() (err error) {
 			return err
 		}
 		if klineCount == 0 {
-			return fmt.Errorf("There is no more klines of %s-%s to backfill EMA", ma.pair, ma.interval)
+			return fmt.Errorf("There is no more klines of %s-%s EMA(%d) to backfill", ma.pair, ma.interval, ma.length)
 		}
 
 		if maCount == 0 {
@@ -60,7 +60,7 @@ func (ma *Ema) backfill() (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%d rows have been inserted into table 'moving_averages' successfully\n", maCount)
+		fmt.Printf("%d rows of %s-%s EMA(%d) have been inserted into table 'moving_averages' successfully\n", maCount, ma.pair, ma.interval, ma.length)
 	}
 
 	return

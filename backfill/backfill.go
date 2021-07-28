@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 )
 
 const (
-	// TODO
+	// NOTE: This must be bigger than MA length
 	KLINE_BATCH_LIMIT = 2000
 )
 
@@ -24,31 +25,35 @@ type baseMA struct {
 	length   int
 }
 
-func Start(db *cryptodb.DB, maType string, pair string, interval string, length int) (err error) {
-	if pair == "" || interval == "" || length == 0 {
-		return errors.New("All pair, interval and length should be specified")
+func Start(db *cryptodb.DB, maType string, pair string, interval string) (err error) {
+	if pair == "" || interval == "" {
+		return errors.New("All pair, interval should be specified")
 	}
 
-	if length > KLINE_BATCH_LIMIT {
-		// TODO const name
-		fmt.Errorf("KLINE_BATCH_LIMIT(%d) must be bigger than length(%d)", KLINE_BATCH_LIMIT, length)
-	}
+	var wg sync.WaitGroup
+	for length := 10; length <= 200; length += 10 {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, db *cryptodb.DB, pair string, interval string, length int) {
+			defer wg.Done()
 
-	ma, err := newMA(db, maType, pair, interval, length)
-	if err != nil {
-		return
-	}
+			ma, err := newMA(db, maType, pair, interval, length)
+			if err != nil {
+				return
+			}
 
-	switch maType {
-	case "ema":
-		if err = ma.backfill(); err != nil {
-			log.Fatal(err)
-		}
-	case "sma":
-		if err = ma.backfill(); err != nil {
-			log.Fatal(err)
-		}
+			switch maType {
+			case "ema":
+				if err = ma.backfill(); err != nil {
+					log.Println(err)
+				}
+			case "sma":
+				if err = ma.backfill(); err != nil {
+					log.Println(err)
+				}
+			}
+		}(&wg, db, pair, interval, length)
 	}
+	wg.Wait()
 
 	return
 }
@@ -67,7 +72,7 @@ func newMA(db *cryptodb.DB, maType string, pair string, interval string, length 
 	case "sma":
 		b = &Sma{baseMA: base}
 	default:
-		err = fmt.Errorf("matype '%s' not supported", maType)
+		err = fmt.Errorf("ma_type '%s' not supported", maType)
 	}
 
 	return

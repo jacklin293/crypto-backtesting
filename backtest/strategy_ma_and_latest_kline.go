@@ -10,18 +10,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type maAndLastKline struct {
+type strategyMaAndLastKline struct {
 	baseStrategy
-	params maAndLastKlineParams
+	params strategyMaAndLastKlineParams
 }
 
-type maAndLastKlineParams struct {
+type strategyMaAndLastKlineParams struct {
 	maType string
 }
 
 // The whole period will be split into several length-period time blocks
-// e.g. length is 4h and period is 2 days, there will be 12 time blocks
-func (s *maAndLastKline) backtest() (err error) {
+// e.g. if length is 4h and period is 2-day, it will be 12 time blocks
+func (s *strategyMaAndLastKline) backtest() (err error) {
 	startTime := time.Now()
 
 	lengthMins, err := utils.ConvertIntervalToMins(s.interval)
@@ -94,7 +94,7 @@ func (s *maAndLastKline) backtest() (err error) {
 	return
 }
 
-func (s *maAndLastKline) checkPricesInTimeBlock(tStart time.Time, tEnd time.Time, baselineKline *cryptodb.Kline, baselineMA *cryptodb.MovingAverage) (err error) {
+func (s *strategyMaAndLastKline) checkPricesInTimeBlock(tStart time.Time, tEnd time.Time, baselineKline *cryptodb.Kline, baselineMA *cryptodb.MovingAverage) (err error) {
 	var klineCount int64
 	var minKlines *[]cryptodb.Kline
 	nextStart := tStart
@@ -124,7 +124,7 @@ func (s *maAndLastKline) checkPricesInTimeBlock(tStart time.Time, tEnd time.Time
 	return
 }
 
-func (s *maAndLastKline) checkPricesWithMinKlines(klines *[]cryptodb.Kline, baselineKline *cryptodb.Kline, baselineMA *cryptodb.MovingAverage) error {
+func (s *strategyMaAndLastKline) checkPricesWithMinKlines(klines *[]cryptodb.Kline, baselineKline *cryptodb.Kline, baselineMA *cryptodb.MovingAverage) error {
 	for _, kline := range *klines {
 		switch s.trade.status {
 		case "short", "waiting":
@@ -133,7 +133,7 @@ func (s *maAndLastKline) checkPricesWithMinKlines(klines *[]cryptodb.Kline, base
 				 0 if d == d2
 				+1 if d >  d2
 			*/
-			if kline.Close.Cmp(baselineKline.High) >= 0 && kline.Close.Cmp(baselineMA.Value) >= 0 {
+			if kline.Close.GreaterThanOrEqual(baselineKline.High) && kline.Close.GreaterThanOrEqual(baselineMA.Value) {
 				// Buy
 				s.trade.cost = s.test.marketValue
 				s.trade.status = "long"
@@ -143,7 +143,7 @@ func (s *maAndLastKline) checkPricesWithMinKlines(klines *[]cryptodb.Kline, base
 				// fmt.Printf("%s [B] %s at %s\n", kline.OpenTime.Format("2006-01-02 15:04"), s.trade.cost.StringFixed(2), s.trade.bidPrice.StringFixed(2))
 			}
 		case "long":
-			if kline.Close.Cmp(baselineKline.Low) <= 0 && kline.Close.Cmp(baselineMA.Value) <= 0 {
+			if kline.Close.LessThanOrEqual(baselineKline.Low) && kline.Close.LessThanOrEqual(baselineMA.Value) {
 				// Sell
 				s.trade.status = "short"
 				s.trade.revenue = kline.Close.Mul(s.trade.bidVolume)

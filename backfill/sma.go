@@ -39,10 +39,10 @@ func (ma *Sma) backfill() (err error) {
 			return err
 		}
 		if klineCount == 0 {
-			return fmt.Errorf("There is no more klines of %s-%s to backfill SMA", ma.pair, ma.interval)
+			return fmt.Errorf("There is no more klines of %s-%s SMA(%d) to backfill", ma.pair, ma.interval, ma.length)
 		}
 		if len(*klines) < ma.length {
-			return fmt.Errorf("There is no enough klines of %s-%s to backfill SMA with length %d", ma.pair, ma.interval, ma.length)
+			return fmt.Errorf("There is no enough klines of %s-%s SMA(%d) to backfill", ma.pair, ma.interval, ma.length)
 		}
 
 		// Start to calculate sma based on existing klines data and return MovingAverage struct
@@ -51,7 +51,7 @@ func (ma *Sma) backfill() (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%d rows have been inserted into table 'moving_averages' successfully\n", maCount)
+		fmt.Printf("%d rows of %s-%s SMA(%d) have been inserted into table 'moving_averages' successfully\n", maCount, ma.pair, ma.interval, ma.length)
 	}
 
 	return
