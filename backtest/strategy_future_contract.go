@@ -18,10 +18,6 @@ type strategyFutureContract struct {
 
 type strategyFutureContractParams struct {
 	contract *future.Contract
-
-	// Record the time and price at the highest price
-	breakoutPeakTime  time.Time
-	breakoutPeakPrice decimal.Decimal
 }
 
 type contractHook struct {
