@@ -1,5 +1,6 @@
-# crypto-backtesting
-Backtesting tool for cryptocurrency market
+# DEPRECATED
+
+This is an experimental repo and no longer maintained.
 
 # How to use
 
